@@ -1,3 +1,5 @@
+import markdown
+from django.utils.html import strip_tags
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import User
@@ -17,6 +19,16 @@ class Post(models.Model):
     modified_time = models.DateTimeField()
     excerpt = models.CharField(max_length=200, blank=True)
     category = models.ForeignKey(Category)
+    def save(self,*args,**kwargs):
+        if not self.excerpt:
+            md=markdown.Markdown(extensions=[
+                'markdown.extensions.extra',
+                'markdown.extensions.codehilite',
+            ])
+            self.excerpt=strip_tags(md.convert(self.body))[:128]
+        super(Post, self).save(*args,**kwargs)
+            
+    
     tags = models.ManyToManyField(Tag, blank=True)
     author = models.ForeignKey(User)
 
