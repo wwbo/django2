@@ -1,9 +1,12 @@
 from django.shortcuts import render,get_object_or_404
 from django.http import HttpResponse
 from comments.forms import CommentForm
-from markdown import markdown
+from markdown import markdown,Markdown
 
-from .models import Post,Category
+from .models import Post,Category,Tag
+
+from django.utils.text import slugify
+from markdown.extensions.toc import TocExtension
 
 # def index(request):
 #  post_list = Post.objects.all()
@@ -98,13 +101,14 @@ class PostDetailView(DetailView):
         self.object.increase_views()
         return response
     def get_object(self, queryset=None):
-        post=super(PostDetailView, self).get_object(queryset=None)
-        post.body=markdown(post.body,
-                                    extensions=[
-                                        'markdown.extensions.extra',
-                                        'markdown.extensions.codehilite',
-                                        'markdown.extensions.toc',
-                                    ])
+        post=super().get_object(queryset=None)
+        md=Markdown(extensions=[
+                    'markdown.extensions.extra',
+                    'markdown.extensions.codehilite',
+                    'markdown.extensions.toc'
+                    ])
+        post.body = md.convert(post.body)
+        post.toc = md.toc
         return post
     def get_context_data(self, **kwargs):
         context=super(PostDetailView,self).get_context_data(**kwargs)
@@ -138,4 +142,10 @@ class CategoryView(IndexView):
     def get_queryset(self):
         cate=get_object_or_404(Category,pk=self.kwargs.get('pk'))
         return super(CategoryView, self).get_queryset().filter(category=cate)
+
+
+class TagView(IndexView):
+    def get_queryset(self):
+        tag=get_object_or_404(Tag,pk=self.kwargs.get('pk'))
+        return super(TagView,self).get_queryset().filter(tags=tag)
 
